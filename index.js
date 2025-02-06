@@ -6,7 +6,7 @@ const { format } = require("fast-csv");
 
 const app = express();
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4000;  //if mentioned in .env file the take from there or else default port is 4000
 const OUTPUT_DIR = path.join(__dirname, "csv_files");
 
 // Ensure the output directory exists
@@ -14,34 +14,27 @@ if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 
-const items = ["item1", "item2", "item3"];
-
-// const API_USERS = "https://jsonplaceholder.typicode.com/users";
-const API_USERS = "https://activity1.stoxbox.in:9010/stxauth/authentication";
-
+//URLs for API
+const API_USERS = "https://jsonplaceholder.typicode.com/users";
 const API_POSTS = "https://jsonplaceholder.typicode.com/posts";
 const API_COMMENTS = "https://jsonplaceholder.typicode.com/comments";
 
+//Get Request
 app.get("/generate-csv", async (req, res) => {
   try {
 
-    // const [apiCallUsers, apiCallPosts, apiCallComments] = Promise.all([
-    //     axios.get(API_USERS),
-    //     axios.get(API_POSTS),
-    //     axios.get(API_COMMENTS)
-    // ])
+    //API Calling => users, posts and comments
+    const responseUsers = await axios.get(API_USERS).catch((err) => {
+      return res.status(err.status).json({ message: "API_USERS request failed", error: err.message });
+    });
 
-    const responseUsers = await axios.get(API_USERS);
-    const responsePosts = await axios.get(API_POSTS);
-    const responseComments = await axios.get(API_COMMENTS);
+    const responsePosts = await axios.get(API_POSTS).catch((err) => {
+      return res.status(err.status).json({ message: "API_POSTS request failed", error: err.message });
+    });
 
-    // const responseUsers = await apiCallUsers;
-    // const responsePosts = await apiCallPosts;
-    // const responseComments = await apiCallComments;
-
-    if(responseUsers.status !== 200) {
-        return res.status(responseUsers.status).json({ message: "API request(s) failed", errors: failedRequests });
-    }
+    const responseComments = await axios.get(API_COMMENTS).catch((err) => {
+      return res.status(err.status).json({ message: "API_COMMENTS request failed", error: err.message });
+    });
 
     const users = responseUsers.data;
     const posts = responsePosts.data;
@@ -76,14 +69,18 @@ app.get("/generate-csv", async (req, res) => {
     });
 
     writeStream.on("error", (err) => {
-        console.error("File writing error:", err.message);
-        res.status(500).json({ message: "Error writing CSV file", error: err.message });
+      console.error("File writing error:", err.message);
+      res
+        .status(500)
+        .json({ message: "Error writing CSV file", error: err.message });
     });
 
     // res.json(data);
   } catch (err) {
     console.error("Error: ", err);
-    res.status(500).json({ message: "Error creating CSV file", error: err.message})
+    res
+      .status(500)
+      .json({ message: "Error creating CSV file", error: err.message });
   }
 });
 
